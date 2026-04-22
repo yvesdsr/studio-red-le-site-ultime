@@ -36,14 +36,14 @@ export function Header() {
           : "bg-transparent"
       }`}
     >
-      <div className="container-rs flex items-center justify-between h-16 md:h-20">
-        <Link to="/" className="flex items-center gap-2 group">
+      <div className="container-rs flex items-center justify-between h-20 md:h-24">
+        <Link to="/" className="flex items-center gap-2 group" aria-label="RED STUDIO — accueil">
           <img
             src={logo}
             alt="RED STUDIO"
-            className="h-8 md:h-10 w-auto transition-transform group-hover:scale-105"
-            width={160}
-            height={40}
+            className="h-12 md:h-16 w-auto transition-transform group-hover:scale-105"
+            width={240}
+            height={64}
           />
         </Link>
 
