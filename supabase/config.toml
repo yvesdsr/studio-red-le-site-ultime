@@ -1,1 +1,13 @@
 project_id = "zpvmxigitmggghokdtap"
+
+[functions.admin-bootstrap]
+verify_jwt = false
+
+[functions.resolve-username]
+verify_jwt = false
+
+[functions.admin-request]
+verify_jwt = false
+
+[functions.admin-request-decision]
+verify_jwt = true
