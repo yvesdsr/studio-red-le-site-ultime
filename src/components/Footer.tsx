@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Lock, Instagram, Facebook, Linkedin, Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 import logo from "@/assets/red-studio-logo.png";
+import { CONTACT, whatsappLink } from "@/lib/contact";
 
 export function Footer() {
   return (
@@ -8,7 +9,7 @@ export function Footer() {
       <div className="container-rs py-20 md:py-28">
         <div className="grid gap-12 md:grid-cols-12">
           <div className="md:col-span-5 space-y-6">
-            <img src={logo} alt="RED STUDIO" className="h-12 w-auto bg-white rounded-md p-2" width={160} height={48} />
+            <img src={logo} alt="RED STUDIO" className="h-16 md:h-20 w-auto bg-white rounded-md p-3" width={240} height={80} />
             <p className="text-white/70 text-lg max-w-md text-pretty">
               Studio créatif et agence de communication digitale basé à Abidjan.
               Nous donnons une image forte aux marques qui veulent compter.
@@ -17,6 +18,7 @@ export function Footer() {
               <SocialLink href="https://instagram.com" label="Instagram"><Instagram className="size-4" /></SocialLink>
               <SocialLink href="https://facebook.com" label="Facebook"><Facebook className="size-4" /></SocialLink>
               <SocialLink href="https://linkedin.com" label="LinkedIn"><Linkedin className="size-4" /></SocialLink>
+              <SocialLink href={whatsappLink()} label="WhatsApp"><MessageCircle className="size-4" /></SocialLink>
             </div>
           </div>
 
@@ -34,9 +36,15 @@ export function Footer() {
           <div className="md:col-span-4">
             <h4 className="eyebrow text-white/50 mb-5">Contact</h4>
             <ul className="space-y-3 text-white/80">
-              <li className="flex items-start gap-3"><MapPin className="size-4 mt-1 text-primary shrink-0" /> Abidjan, Côte d&rsquo;Ivoire</li>
-              <li className="flex items-start gap-3"><Phone className="size-4 mt-1 text-primary shrink-0" /> +225 00 00 00 00</li>
-              <li className="flex items-start gap-3"><Mail className="size-4 mt-1 text-primary shrink-0" /> contact@redstudio.ci</li>
+              <li className="flex items-start gap-3"><MapPin className="size-4 mt-1 text-primary shrink-0" /> {CONTACT.address}, {CONTACT.city}</li>
+              <li className="flex items-start gap-3">
+                <Phone className="size-4 mt-1 text-primary shrink-0" />
+                <a href={`tel:${CONTACT.phoneRaw}`} className="hover:text-primary transition-colors">{CONTACT.phone}</a>
+              </li>
+              <li className="flex items-start gap-3">
+                <Mail className="size-4 mt-1 text-primary shrink-0" />
+                <a href={`mailto:${CONTACT.email}`} className="hover:text-primary transition-colors break-all">{CONTACT.email}</a>
+              </li>
             </ul>
             <Link
               to="/contact"

@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, ArrowUpRight, Eye, X, ExternalLink, Download } from "lucide-react";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Reveal } from "@/components/Reveal";
+import { fetchRealisations, getRealisationAssetUrl, type Realisation } from "@/lib/realisations";
+import { supabase } from "@/integrations/supabase/client";
 import workIdentity from "@/assets/work-identity.jpg";
 import workBrochure from "@/assets/work-brochure.jpg";
 import workWeb from "@/assets/work-web.jpg";
@@ -22,35 +24,40 @@ export const Route = createFileRoute("/realisations")({
   component: WorkPage,
 });
 
+const FALLBACK_IMAGES = [workIdentity, workBrochure, workWeb, workMobile, workSocial, workVideo];
+
 const CATEGORIES = [
   "Tout voir",
   "Identité visuelle",
-  "Édition",
-  "Site internet",
+  "Documents institutionnels",
+  "Plaquettes & brochures",
+  "Supports imprimés",
+  "Sites internet",
   "UI/UX",
   "Community management",
+  "Publicité digitale",
   "Vidéo",
+  "IA créative",
 ] as const;
-type Category = typeof CATEGORIES[number];
-
-const PROJECTS: Array<{ title: string; client: string; category: Category; image: string }> = [
-  { title: "Refonte d'une marque industrielle", client: "Groupe IFA", category: "Identité visuelle", image: workIdentity },
-  { title: "Rapport annuel premium", client: "Institution publique", category: "Édition", image: workBrochure },
-  { title: "Plateforme corporate", client: "Cabinet de conseil", category: "Site internet", image: workWeb },
-  { title: "Application mobile fintech", client: "Startup Abidjan", category: "UI/UX", image: workMobile },
-  { title: "Stratégie social media", client: "Marque lifestyle", category: "Community management", image: workSocial },
-  { title: "Film de marque", client: "Groupe agroalimentaire", category: "Vidéo", image: workVideo },
-  { title: "Identité événementielle", client: "Festival culturel", category: "Identité visuelle", image: workIdentity },
-  { title: "Plaquette commerciale", client: "Cabinet d'avocats", category: "Édition", image: workBrochure },
-  { title: "Site e-commerce", client: "Marque mode", category: "Site internet", image: workWeb },
-];
 
 function WorkPage() {
-  const [active, setActive] = useState<Category>("Tout voir");
+  const [items, setItems] = useState<Realisation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState<string>("Tout voir");
+  const [open, setOpen] = useState<Realisation | null>(null);
+
+  useEffect(() => {
+    fetchRealisations().then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
+  }, []);
+
   const filtered = useMemo(
-    () => (active === "Tout voir" ? PROJECTS : PROJECTS.filter((p) => p.category === active)),
-    [active]
+    () => (active === "Tout voir" ? items : items.filter((p) => p.category === active)),
+    [active, items]
   );
+
+  const pdfUrl = open?.pdf_path
+    ? supabase.storage.from("realisation-assets").getPublicUrl(open.pdf_path).data.publicUrl
+    : null;
 
   return (
     <PublicLayout>
@@ -92,41 +99,53 @@ function WorkPage() {
       </section>
 
       <section className="container-rs pb-20 md:pb-32">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((p, i) => (
-            <Reveal key={`${p.title}-${i}`} delay={(i % 3) * 60}>
-              <article className="group cursor-pointer">
-                <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-card">
-                  <img
-                    src={p.image}
-                    alt={p.title}
-                    className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                    width={1200}
-                    height={1500}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-90" />
-                  <div className="absolute top-4 left-4">
-                    <span className="rounded-full bg-white/95 text-foreground text-xs font-medium px-3 py-1.5">
-                      {p.category}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-0 inset-x-0 p-5 text-white">
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <div className="text-xs uppercase tracking-[0.18em] text-white/70 mb-1">{p.client}</div>
-                        <h3 className="text-lg font-display">{p.title}</h3>
+        {loading ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="aspect-[4/5] rounded-2xl bg-card border border-border animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((p, i) => {
+              const cover = getRealisationAssetUrl(p.cover_image_url) ?? FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
+              return (
+                <Reveal key={p.id} delay={(i % 3) * 60}>
+                  <article className="group">
+                    <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-card">
+                      <img
+                        src={cover}
+                        alt={p.title}
+                        className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                        width={1200}
+                        height={1500}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0" />
+                      <div className="absolute top-4 left-4">
+                        <span className="rounded-full bg-white/95 text-foreground text-xs font-medium px-3 py-1.5">
+                          {p.category}
+                        </span>
                       </div>
-                      <ArrowUpRight className="size-5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
+                      <div className="absolute bottom-0 inset-x-0 p-5 text-white">
+                        <div className="text-xs uppercase tracking-[0.18em] text-white/70 mb-1">{p.client_name ?? "—"}</div>
+                        <h2 className="text-lg font-display mb-3">{p.title}</h2>
+                        <button
+                          onClick={() => setOpen(p)}
+                          className="inline-flex items-center gap-2 rounded-full bg-white text-foreground px-4 py-2 text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          <Eye className="size-4" /> Voir
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </article>
-            </Reveal>
-          ))}
-        </div>
+                  </article>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-20 text-muted-foreground">
             Aucun projet dans cette catégorie pour le moment.
           </div>
@@ -150,6 +169,95 @@ function WorkPage() {
           </div>
         </Reveal>
       </section>
+
+      {/* Detail modal */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto"
+          onClick={() => setOpen(null)}
+        >
+          <div className="min-h-screen flex items-start md:items-center justify-center p-4">
+            <div
+              className="relative bg-background rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setOpen(null)}
+                aria-label="Fermer"
+                className="absolute top-4 right-4 z-10 size-10 rounded-full bg-background/90 backdrop-blur border border-border text-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center"
+              >
+                <X className="size-5" />
+              </button>
+              <div className="aspect-[16/9] bg-card overflow-hidden">
+                <img
+                  src={getRealisationAssetUrl(open.cover_image_url) ?? FALLBACK_IMAGES[0]}
+                  alt={open.title}
+                  className="size-full object-cover"
+                />
+              </div>
+              <div className="p-7 md:p-10 space-y-6">
+                <div>
+                  <span className="eyebrow text-primary">{open.category}</span>
+                  <h2 className="display-md mt-2">{open.title}</h2>
+                  {open.client_name && (
+                    <p className="text-muted-foreground mt-1">Client : <span className="text-foreground">{open.client_name}</span></p>
+                  )}
+                </div>
+
+                {open.description && <p className="text-foreground/80 text-pretty">{open.description}</p>}
+
+                {(open.before_text || open.after_text) && (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {open.before_text && (
+                      <div className="rounded-xl border border-border p-5 bg-card">
+                        <div className="eyebrow text-muted-foreground mb-2">Avant</div>
+                        <p className="text-sm text-foreground/80">{open.before_text}</p>
+                      </div>
+                    )}
+                    {open.after_text && (
+                      <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+                        <div className="eyebrow text-primary mb-2">Après</div>
+                        <p className="text-sm text-foreground/90">{open.after_text}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {open.impact && (
+                  <div className="rounded-xl bg-foreground text-background p-5">
+                    <div className="eyebrow text-primary mb-2">Impact</div>
+                    <p className="text-sm">{open.impact}</p>
+                  </div>
+                )}
+
+                {open.gallery.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {open.gallery.map((g, i) => (
+                      <img key={i} src={getRealisationAssetUrl(g) ?? g} alt="" className="aspect-square rounded-lg object-cover" loading="lazy" />
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {open.external_link && (
+                    <a href={open.external_link} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium hover:bg-card transition-colors">
+                      <ExternalLink className="size-4" /> Voir le projet
+                    </a>
+                  )}
+                  {pdfUrl && (
+                    <a href={pdfUrl} target="_blank" rel="noreferrer" download className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors">
+                      <Download className="size-4" /> Télécharger le document
+                    </a>
+                  )}
+                  <Link to="/contact" className="inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2.5 text-sm font-medium hover:bg-primary transition-colors">
+                    Démarrer un projet similaire <ArrowUpRight className="size-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PublicLayout>
   );
 }
