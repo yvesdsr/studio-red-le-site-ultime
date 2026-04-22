@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      admin_requests: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      client_realisations: {
+        Row: {
+          client_id: string
+          realisation_id: string
+        }
+        Insert: {
+          client_id: string
+          realisation_id: string
+        }
+        Update: {
+          client_id?: string
+          realisation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_realisations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_realisations_realisation_id_fkey"
+            columns: ["realisation_id"]
+            isOneToOne: false
+            referencedRelation: "realisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          link: string | null
+          logo_url: string | null
+          name: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          link?: string | null
+          logo_url?: string | null
+          name: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          link?: string | null
+          logo_url?: string | null
+          name?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -41,6 +164,69 @@ export type Database = {
           name?: string
           phone?: string | null
           subject?: string | null
+        }
+        Relationships: []
+      }
+      realisations: {
+        Row: {
+          after_text: string | null
+          before_text: string | null
+          category: string
+          client_name: string | null
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          external_link: string | null
+          gallery: Json
+          id: string
+          impact: string | null
+          is_featured: boolean
+          is_published: boolean
+          pdf_path: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          after_text?: string | null
+          before_text?: string | null
+          category: string
+          client_name?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          external_link?: string | null
+          gallery?: Json
+          id?: string
+          impact?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          pdf_path?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          after_text?: string | null
+          before_text?: string | null
+          category?: string
+          client_name?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          external_link?: string | null
+          gallery?: Json
+          id?: string
+          impact?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          pdf_path?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
