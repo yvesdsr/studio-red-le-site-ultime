@@ -15,7 +15,9 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ConfianceRouteImport } from './routes/confiance'
 import { Route as AProposRouteImport } from './routes/a-propos'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ServicesSlugRouteImport } from './routes/services.$slug'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 
 const ServicesRoute = ServicesRouteImport.update({
   id: '/services',
@@ -47,10 +49,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesSlugRoute = ServicesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => ServicesRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -60,7 +72,9 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/realisations': typeof RealisationsRoute
   '/services': typeof ServicesRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/services/$slug': typeof ServicesSlugRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/realisations': typeof RealisationsRoute
   '/services': typeof ServicesRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/services/$slug': typeof ServicesSlugRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/realisations': typeof RealisationsRoute
   '/services': typeof ServicesRouteWithChildren
+  '/admin/login': typeof AdminLoginRoute
   '/services/$slug': typeof ServicesSlugRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +108,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/realisations'
     | '/services'
+    | '/admin/login'
     | '/services/$slug'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/realisations'
     | '/services'
+    | '/admin/login'
     | '/services/$slug'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '/contact'
     | '/realisations'
     | '/services'
+    | '/admin/login'
     | '/services/$slug'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,6 +142,8 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   RealisationsRoute: typeof RealisationsRoute
   ServicesRoute: typeof ServicesRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,12 +190,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/$slug': {
       id: '/services/$slug'
       path: '/$slug'
       fullPath: '/services/$slug'
       preLoaderRoute: typeof ServicesSlugRouteImport
       parentRoute: typeof ServicesRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -193,6 +233,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   RealisationsRoute: RealisationsRoute,
   ServicesRoute: ServicesRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
