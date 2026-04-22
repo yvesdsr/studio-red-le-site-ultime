@@ -1,22 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
-import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Reveal } from "@/components/Reveal";
 import { supabase } from "@/integrations/supabase/client";
+import { CONTACT, whatsappLink } from "@/lib/contact";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
       { title: "Contact — RED STUDIO" },
-      { name: "description", content: "Parlons de votre projet. Studio créatif basé à Abidjan. Réponse sous 48h." },
+      { name: "description", content: "Parlons de votre projet. Studio créatif basé à Abidjan, Cocody Deux Plateaux. Réponse sous 48h." },
       { property: "og:title", content: "Contact — RED STUDIO" },
       { property: "og:description", content: "Confiez-nous votre image. Donnez vie à vos idées avec Red Studio." },
     ],
   }),
   component: ContactPage,
 });
+
+const FORMSUBMIT_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT.email}`;
 
 const schema = z.object({
   name: z.string().trim().min(2, "Votre nom est requis").max(120),
@@ -46,18 +49,47 @@ function ContactPage() {
       return;
     }
     setState("loading");
-    const { error: dbError } = await supabase.from("contact_messages").insert({
+
+    // 1) Envoi par email via FormSubmit (livraison principale)
+    let mailDelivered = false;
+    try {
+      const res = await fetch(FORMSUBMIT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          _subject: `RED STUDIO — Nouveau message de ${parsed.data.name}`,
+          _template: "table",
+          _captcha: "false",
+          Nom: parsed.data.name,
+          Email: parsed.data.email,
+          Téléphone: parsed.data.phone || "—",
+          Sujet: parsed.data.subject || "—",
+          Message: parsed.data.message,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      mailDelivered = res.ok && (json.success === "true" || json.success === true || res.status === 200);
+    } catch (_) {
+      mailDelivered = false;
+    }
+
+    // 2) Sauvegarde miroir en base (visible dans l'admin)
+    await supabase.from("contact_messages").insert({
       name: parsed.data.name,
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       subject: parsed.data.subject || null,
       message: parsed.data.message,
     });
-    if (dbError) {
+
+    if (!mailDelivered) {
       setState("error");
-      setError("Une erreur est survenue. Réessayez ou contactez-nous directement.");
+      setError(
+        "Votre message a été enregistré mais l'envoi par email a échoué. Vous pouvez nous joindre directement par WhatsApp."
+      );
       return;
     }
+
     setState("success");
     (e.target as HTMLFormElement).reset();
   }
@@ -85,7 +117,7 @@ function ContactPage() {
         <div className="grid lg:grid-cols-12 gap-10">
           <Reveal className="lg:col-span-5 space-y-6">
             <div className="rounded-2xl bg-card border border-border p-7">
-              <h3 className="text-lg font-semibold mb-5">Contactez-nous directement</h3>
+              <h2 className="text-lg font-semibold mb-5">Contactez-nous directement</h2>
               <ul className="space-y-4 text-foreground">
                 <li className="flex items-start gap-3">
                   <span className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -93,7 +125,8 @@ function ContactPage() {
                   </span>
                   <div>
                     <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Studio</div>
-                    <div>Abidjan, Côte d&rsquo;Ivoire</div>
+                    <div>{CONTACT.address}</div>
+                    <div className="text-sm text-muted-foreground">{CONTACT.city}</div>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
@@ -101,8 +134,8 @@ function ContactPage() {
                     <Phone className="size-4" />
                   </span>
                   <div>
-                    <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Téléphone</div>
-                    <a href="tel:+22500000000" className="hover:text-primary transition-colors">+225 00 00 00 00</a>
+                    <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Téléphone / WhatsApp</div>
+                    <a href={`tel:${CONTACT.phoneRaw}`} className="hover:text-primary transition-colors">{CONTACT.phone}</a>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">
@@ -111,22 +144,22 @@ function ContactPage() {
                   </span>
                   <div>
                     <div className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Email</div>
-                    <a href="mailto:contact@redstudio.ci" className="hover:text-primary transition-colors">contact@redstudio.ci</a>
+                    <a href={`mailto:${CONTACT.email}`} className="hover:text-primary transition-colors break-all">{CONTACT.email}</a>
                   </div>
                 </li>
               </ul>
               <a
-                href="https://wa.me/22500000000"
+                href={whatsappLink("Bonjour RED STUDIO, je souhaite discuter d'un projet.")}
                 target="_blank"
-                rel="noreferrer"
-                className="mt-6 inline-flex items-center justify-center gap-2 w-full rounded-full bg-foreground text-background px-5 py-3 text-sm font-medium hover:bg-primary transition-colors"
+                rel="noreferrer noopener"
+                className="mt-6 inline-flex items-center justify-center gap-2 w-full rounded-full bg-[#25D366] text-white px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
               >
                 <MessageCircle className="size-4" /> Discuter sur WhatsApp
               </a>
             </div>
 
             <div className="rounded-2xl bg-foreground text-background p-7">
-              <h3 className="text-xl font-display mb-2">Donnez vie à vos idées avec Red Studio.</h3>
+              <h2 className="text-xl font-display mb-2">Donnez vie à vos idées avec Red Studio.</h2>
               <p className="text-sm text-background/70">
                 Une équipe à l&rsquo;écoute, des process clairs, une réponse rapide.
               </p>
@@ -162,7 +195,11 @@ function ContactPage() {
                   </div>
                   <Field label="Votre projet" name="message" textarea required />
 
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {error && (
+                    <p className="flex items-start gap-2 text-sm text-destructive">
+                      <AlertCircle className="size-4 mt-0.5 shrink-0" /> {error}
+                    </p>
+                  )}
 
                   <button
                     type="submit"
