@@ -200,22 +200,51 @@ function ServiceRow({ service, onChange }: { service: Service; onChange: () => v
     setMsg("Enregistré."); onChange(); setTimeout(() => setMsg(null), 2000);
   }
   async function uploadPdf(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.type !== "application/pdf") { setMsg("Le fichier doit être un PDF."); return; }
-    if (file.size > 15 * 1024 * 1024) { setMsg("Fichier trop lourd (15 Mo max)."); return; }
-    setUploading(true); setMsg(null);
-    const path = `${service.slug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error: upErr } = await supabase.storage.from("service-pdfs").upload(path, file, { contentType: "application/pdf", upsert: false });
-    if (upErr) { setUploading(false); setMsg("Erreur d'upload : " + upErr.message); return; }
-    if (pdfPath) await supabase.storage.from("service-pdfs").remove([pdfPath]);
-    await supabase.from("services").update({ pdf_path: path }).eq("id", service.id);
-    setUploading(false); setPdfPath(path); setMsg("PDF mis à jour."); onChange();
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset for re-selection
+    if (!file) return;
+    if (file.type !== "application/pdf") { setMsg("❌ Le fichier doit être un PDF."); return; }
+    if (file.size > 15 * 1024 * 1024) { setMsg("❌ Fichier trop lourd (15 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement en cours...");
+    try {
+      const path = `${service.slug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from("service-pdfs")
+        .upload(path, file, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+      const oldPath = pdfPath;
+      const { error: dbErr } = await supabase.from("services").update({ pdf_path: path }).eq("id", service.id);
+      if (dbErr) {
+        await supabase.storage.from("service-pdfs").remove([path]);
+        throw dbErr;
+      }
+      if (oldPath) await supabase.storage.from("service-pdfs").remove([oldPath]);
+      setPdfPath(path);
+      setMsg("✅ PDF ajouté avec succès");
+      onChange();
+      setTimeout(() => setMsg(null), 3000);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[service pdf upload]", err);
+      setMsg("❌ Erreur lors de l'ajout du PDF : " + m);
+    } finally {
+      setUploading(false);
+    }
   }
   async function deletePdf() {
     if (!pdfPath || !confirm("Supprimer le PDF ?")) return;
-    await supabase.storage.from("service-pdfs").remove([pdfPath]);
-    await supabase.from("services").update({ pdf_path: null }).eq("id", service.id);
-    setPdfPath(null); setMsg("PDF supprimé."); onChange();
+    setMsg("Suppression en cours...");
+    try {
+      await supabase.storage.from("service-pdfs").remove([pdfPath]);
+      const { error } = await supabase.from("services").update({ pdf_path: null }).eq("id", service.id);
+      if (error) throw error;
+      setPdfPath(null); setMsg("✅ PDF supprimé."); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[service pdf delete]", err);
+      setMsg("❌ Erreur : " + m);
+    }
   }
 
   return (
@@ -244,13 +273,21 @@ function ServiceRow({ service, onChange }: { service: Service; onChange: () => v
           </label>
           <div className="rounded-xl border border-border p-4 bg-card">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-medium flex items-center gap-2"><FileText className="size-4 text-primary" /> Fiche PDF</div>
-                {pdfUrl ? <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1">Ouvrir le PDF <ExternalLink className="size-3" /></a> : <div className="text-xs text-muted-foreground mt-1">Aucun PDF</div>}
+                {pdfUrl ? (
+                  <div className="mt-1 space-y-1">
+                    <div className="text-xs text-muted-foreground truncate max-w-xs" title={pdfPath ?? ""}>{pdfPath?.split("/").pop()}</div>
+                    <div className="flex items-center gap-3">
+                      <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir le PDF <ExternalLink className="size-3" /></a>
+                      <a href={pdfUrl} download className="text-xs text-primary hover:underline inline-flex items-center gap-1">Télécharger <Upload className="size-3 rotate-180" /></a>
+                    </div>
+                  </div>
+                ) : <div className="text-xs text-muted-foreground mt-1">Aucun PDF associé</div>}
               </div>
               <div className="flex items-center gap-2">
-                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background transition-colors ${uploading ? "opacity-60" : ""}`}>
-                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pdfPath ? "Remplacer" : "Téléverser"}
+                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pdfPath ? "Remplacer le PDF" : "Téléverser un PDF"}
                   <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} disabled={uploading} />
                 </label>
                 {pdfPath && <button onClick={deletePdf} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="size-4" /> Supprimer</button>}
@@ -331,23 +368,67 @@ function RealisationRow({ item, onChange }: { item: Realisation; onChange: () =>
     if (!error) { onChange(); setTimeout(() => setMsg(null), 2000); }
   }
   async function uploadCover(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true);
-    const path = `${v.slug}/cover-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error: upErr } = await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { upsert: false });
-    if (!upErr) {
-      await supabase.from("realisations").update({ cover_image_url: path }).eq("id", item.id);
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setMsg("❌ Le fichier doit être une image."); return; }
+    if (file.size > 10 * 1024 * 1024) { setMsg("❌ Image trop lourde (10 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement de l'image en cours...");
+    try {
+      const path = `${v.slug}/cover-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase.from("realisations").update({ cover_image_url: path }).eq("id", item.id);
+      if (dbErr) { await supabase.storage.from(REALISATION_BUCKET).remove([path]); throw dbErr; }
       setField("cover_image_url", path);
-    } else setMsg(upErr.message);
-    setUploading(false); onChange();
+      setMsg("✅ Image mise à jour"); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation cover upload]", err);
+      setMsg("❌ Erreur : " + m);
+    } finally { setUploading(false); }
   }
   async function uploadPdf(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.type !== "application/pdf") { setMsg("Doit être un PDF"); return; }
-    const path = `${v.slug}/doc-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { contentType: "application/pdf" });
-    await supabase.from("realisations").update({ pdf_path: path }).eq("id", item.id);
-    setField("pdf_path", path); onChange();
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") { setMsg("❌ Le fichier doit être un PDF."); return; }
+    if (file.size > 15 * 1024 * 1024) { setMsg("❌ PDF trop lourd (15 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement du PDF en cours...");
+    try {
+      const path = `${v.slug}/doc-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from(REALISATION_BUCKET)
+        .upload(path, file, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+      const oldPdf = v.pdf_path;
+      const { error: dbErr } = await supabase.from("realisations").update({ pdf_path: path }).eq("id", item.id);
+      if (dbErr) { await supabase.storage.from(REALISATION_BUCKET).remove([path]); throw dbErr; }
+      if (oldPdf) await supabase.storage.from(REALISATION_BUCKET).remove([oldPdf]);
+      setField("pdf_path", path);
+      setMsg("✅ PDF ajouté avec succès"); onChange();
+      setTimeout(() => setMsg(null), 3000);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation pdf upload]", err);
+      setMsg("❌ Erreur lors de l'ajout du PDF : " + m);
+    } finally { setUploading(false); }
+  }
+  async function deletePdf() {
+    if (!v.pdf_path || !confirm("Supprimer le PDF associé ?")) return;
+    try {
+      await supabase.storage.from(REALISATION_BUCKET).remove([v.pdf_path]);
+      const { error } = await supabase.from("realisations").update({ pdf_path: null }).eq("id", item.id);
+      if (error) throw error;
+      setField("pdf_path", null);
+      setMsg("✅ PDF supprimé"); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation pdf delete]", err);
+      setMsg("❌ Erreur : " + m);
+    }
   }
   async function remove() {
     if (!confirm("Supprimer cette réalisation ?")) return;
@@ -401,16 +482,41 @@ function RealisationRow({ item, onChange }: { item: Realisation; onChange: () =>
             </label>
           </div>
 
-          <div className="flex flex-wrap gap-3 items-center pt-2">
-            <label className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background">
-              {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />} Image de couverture
-              <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
-            </label>
-            <label className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background">
-              <FileText className="size-4" /> PDF associé
-              <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} />
-            </label>
-            {v.cover_image_url && <a href={getRealisationAssetUrl(v.cover_image_url) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Voir image</a>}
+          <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+            <div className="text-sm font-medium flex items-center gap-2"><ImageIcon className="size-4 text-primary" /> Image de couverture</div>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} {v.cover_image_url ? "Remplacer l'image" : "Téléverser l'image"}
+                <input type="file" accept="image/*" className="hidden" onChange={uploadCover} disabled={uploading} />
+              </label>
+              {v.cover_image_url && <a href={getRealisationAssetUrl(v.cover_image_url) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir l'image <ExternalLink className="size-3" /></a>}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <div className="text-sm font-medium flex items-center gap-2"><FileText className="size-4 text-primary" /> PDF associé</div>
+                {v.pdf_path ? (
+                  <div className="mt-1 space-y-1">
+                    <div className="text-xs text-muted-foreground truncate max-w-xs" title={v.pdf_path}>{v.pdf_path.split("/").pop()}</div>
+                    <div className="flex items-center gap-3">
+                      <a href={getRealisationAssetUrl(v.pdf_path) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir le PDF <ExternalLink className="size-3" /></a>
+                      <a href={getRealisationAssetUrl(v.pdf_path) ?? "#"} download className="text-xs text-primary hover:underline inline-flex items-center gap-1">Télécharger</a>
+                    </div>
+                  </div>
+                ) : <div className="text-xs text-muted-foreground mt-1">Aucun PDF associé</div>}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} {v.pdf_path ? "Remplacer le PDF" : "Téléverser un PDF"}
+                  <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} disabled={uploading} />
+                </label>
+                {v.pdf_path && (
+                  <button onClick={deletePdf} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /> Supprimer</button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
