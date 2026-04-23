@@ -200,22 +200,51 @@ function ServiceRow({ service, onChange }: { service: Service; onChange: () => v
     setMsg("Enregistré."); onChange(); setTimeout(() => setMsg(null), 2000);
   }
   async function uploadPdf(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.type !== "application/pdf") { setMsg("Le fichier doit être un PDF."); return; }
-    if (file.size > 15 * 1024 * 1024) { setMsg("Fichier trop lourd (15 Mo max)."); return; }
-    setUploading(true); setMsg(null);
-    const path = `${service.slug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error: upErr } = await supabase.storage.from("service-pdfs").upload(path, file, { contentType: "application/pdf", upsert: false });
-    if (upErr) { setUploading(false); setMsg("Erreur d'upload : " + upErr.message); return; }
-    if (pdfPath) await supabase.storage.from("service-pdfs").remove([pdfPath]);
-    await supabase.from("services").update({ pdf_path: path }).eq("id", service.id);
-    setUploading(false); setPdfPath(path); setMsg("PDF mis à jour."); onChange();
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset for re-selection
+    if (!file) return;
+    if (file.type !== "application/pdf") { setMsg("❌ Le fichier doit être un PDF."); return; }
+    if (file.size > 15 * 1024 * 1024) { setMsg("❌ Fichier trop lourd (15 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement en cours...");
+    try {
+      const path = `${service.slug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from("service-pdfs")
+        .upload(path, file, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+      const oldPath = pdfPath;
+      const { error: dbErr } = await supabase.from("services").update({ pdf_path: path }).eq("id", service.id);
+      if (dbErr) {
+        await supabase.storage.from("service-pdfs").remove([path]);
+        throw dbErr;
+      }
+      if (oldPath) await supabase.storage.from("service-pdfs").remove([oldPath]);
+      setPdfPath(path);
+      setMsg("✅ PDF ajouté avec succès");
+      onChange();
+      setTimeout(() => setMsg(null), 3000);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[service pdf upload]", err);
+      setMsg("❌ Erreur lors de l'ajout du PDF : " + m);
+    } finally {
+      setUploading(false);
+    }
   }
   async function deletePdf() {
     if (!pdfPath || !confirm("Supprimer le PDF ?")) return;
-    await supabase.storage.from("service-pdfs").remove([pdfPath]);
-    await supabase.from("services").update({ pdf_path: null }).eq("id", service.id);
-    setPdfPath(null); setMsg("PDF supprimé."); onChange();
+    setMsg("Suppression en cours...");
+    try {
+      await supabase.storage.from("service-pdfs").remove([pdfPath]);
+      const { error } = await supabase.from("services").update({ pdf_path: null }).eq("id", service.id);
+      if (error) throw error;
+      setPdfPath(null); setMsg("✅ PDF supprimé."); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[service pdf delete]", err);
+      setMsg("❌ Erreur : " + m);
+    }
   }
 
   return (
