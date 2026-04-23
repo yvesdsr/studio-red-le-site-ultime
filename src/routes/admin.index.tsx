@@ -368,23 +368,67 @@ function RealisationRow({ item, onChange }: { item: Realisation; onChange: () =>
     if (!error) { onChange(); setTimeout(() => setMsg(null), 2000); }
   }
   async function uploadCover(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setUploading(true);
-    const path = `${v.slug}/cover-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error: upErr } = await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { upsert: false });
-    if (!upErr) {
-      await supabase.from("realisations").update({ cover_image_url: path }).eq("id", item.id);
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setMsg("❌ Le fichier doit être une image."); return; }
+    if (file.size > 10 * 1024 * 1024) { setMsg("❌ Image trop lourde (10 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement de l'image en cours...");
+    try {
+      const path = `${v.slug}/cover-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase.from("realisations").update({ cover_image_url: path }).eq("id", item.id);
+      if (dbErr) { await supabase.storage.from(REALISATION_BUCKET).remove([path]); throw dbErr; }
       setField("cover_image_url", path);
-    } else setMsg(upErr.message);
-    setUploading(false); onChange();
+      setMsg("✅ Image mise à jour"); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation cover upload]", err);
+      setMsg("❌ Erreur : " + m);
+    } finally { setUploading(false); }
   }
   async function uploadPdf(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.type !== "application/pdf") { setMsg("Doit être un PDF"); return; }
-    const path = `${v.slug}/doc-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    await supabase.storage.from(REALISATION_BUCKET).upload(path, file, { contentType: "application/pdf" });
-    await supabase.from("realisations").update({ pdf_path: path }).eq("id", item.id);
-    setField("pdf_path", path); onChange();
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") { setMsg("❌ Le fichier doit être un PDF."); return; }
+    if (file.size > 15 * 1024 * 1024) { setMsg("❌ PDF trop lourd (15 Mo max)."); return; }
+    setUploading(true); setMsg("Téléversement du PDF en cours...");
+    try {
+      const path = `${v.slug}/doc-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage
+        .from(REALISATION_BUCKET)
+        .upload(path, file, { contentType: "application/pdf", upsert: false });
+      if (upErr) throw upErr;
+      const oldPdf = v.pdf_path;
+      const { error: dbErr } = await supabase.from("realisations").update({ pdf_path: path }).eq("id", item.id);
+      if (dbErr) { await supabase.storage.from(REALISATION_BUCKET).remove([path]); throw dbErr; }
+      if (oldPdf) await supabase.storage.from(REALISATION_BUCKET).remove([oldPdf]);
+      setField("pdf_path", path);
+      setMsg("✅ PDF ajouté avec succès"); onChange();
+      setTimeout(() => setMsg(null), 3000);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation pdf upload]", err);
+      setMsg("❌ Erreur lors de l'ajout du PDF : " + m);
+    } finally { setUploading(false); }
+  }
+  async function deletePdf() {
+    if (!v.pdf_path || !confirm("Supprimer le PDF associé ?")) return;
+    try {
+      await supabase.storage.from(REALISATION_BUCKET).remove([v.pdf_path]);
+      const { error } = await supabase.from("realisations").update({ pdf_path: null }).eq("id", item.id);
+      if (error) throw error;
+      setField("pdf_path", null);
+      setMsg("✅ PDF supprimé"); onChange();
+      setTimeout(() => setMsg(null), 2500);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation pdf delete]", err);
+      setMsg("❌ Erreur : " + m);
+    }
   }
   async function remove() {
     if (!confirm("Supprimer cette réalisation ?")) return;
