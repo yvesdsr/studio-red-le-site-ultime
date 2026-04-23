@@ -482,16 +482,41 @@ function RealisationRow({ item, onChange }: { item: Realisation; onChange: () =>
             </label>
           </div>
 
-          <div className="flex flex-wrap gap-3 items-center pt-2">
-            <label className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background">
-              {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />} Image de couverture
-              <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
-            </label>
-            <label className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background">
-              <FileText className="size-4" /> PDF associé
-              <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} />
-            </label>
-            {v.cover_image_url && <a href={getRealisationAssetUrl(v.cover_image_url) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Voir image</a>}
+          <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+            <div className="text-sm font-medium flex items-center gap-2"><ImageIcon className="size-4 text-primary" /> Image de couverture</div>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} {v.cover_image_url ? "Remplacer l'image" : "Téléverser l'image"}
+                <input type="file" accept="image/*" className="hidden" onChange={uploadCover} disabled={uploading} />
+              </label>
+              {v.cover_image_url && <a href={getRealisationAssetUrl(v.cover_image_url) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir l'image <ExternalLink className="size-3" /></a>}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <div className="text-sm font-medium flex items-center gap-2"><FileText className="size-4 text-primary" /> PDF associé</div>
+                {v.pdf_path ? (
+                  <div className="mt-1 space-y-1">
+                    <div className="text-xs text-muted-foreground truncate max-w-xs" title={v.pdf_path}>{v.pdf_path.split("/").pop()}</div>
+                    <div className="flex items-center gap-3">
+                      <a href={getRealisationAssetUrl(v.pdf_path) ?? "#"} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir le PDF <ExternalLink className="size-3" /></a>
+                      <a href={getRealisationAssetUrl(v.pdf_path) ?? "#"} download className="text-xs text-primary hover:underline inline-flex items-center gap-1">Télécharger</a>
+                    </div>
+                  </div>
+                ) : <div className="text-xs text-muted-foreground mt-1">Aucun PDF associé</div>}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} {v.pdf_path ? "Remplacer le PDF" : "Téléverser un PDF"}
+                  <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} disabled={uploading} />
+                </label>
+                {v.pdf_path && (
+                  <button onClick={deletePdf} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-destructive hover:bg-destructive/10"><Trash2 className="size-4" /> Supprimer</button>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
