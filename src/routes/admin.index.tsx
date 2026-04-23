@@ -273,13 +273,21 @@ function ServiceRow({ service, onChange }: { service: Service; onChange: () => v
           </label>
           <div className="rounded-xl border border-border p-4 bg-card">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-medium flex items-center gap-2"><FileText className="size-4 text-primary" /> Fiche PDF</div>
-                {pdfUrl ? <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1">Ouvrir le PDF <ExternalLink className="size-3" /></a> : <div className="text-xs text-muted-foreground mt-1">Aucun PDF</div>}
+                {pdfUrl ? (
+                  <div className="mt-1 space-y-1">
+                    <div className="text-xs text-muted-foreground truncate max-w-xs" title={pdfPath ?? ""}>{pdfPath?.split("/").pop()}</div>
+                    <div className="flex items-center gap-3">
+                      <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">Voir le PDF <ExternalLink className="size-3" /></a>
+                      <a href={pdfUrl} download className="text-xs text-primary hover:underline inline-flex items-center gap-1">Télécharger <Upload className="size-3 rotate-180" /></a>
+                    </div>
+                  </div>
+                ) : <div className="text-xs text-muted-foreground mt-1">Aucun PDF associé</div>}
               </div>
               <div className="flex items-center gap-2">
-                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background transition-colors ${uploading ? "opacity-60" : ""}`}>
-                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pdfPath ? "Remplacer" : "Téléverser"}
+                <label className={`inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm cursor-pointer hover:bg-background transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                  {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}{pdfPath ? "Remplacer le PDF" : "Téléverser un PDF"}
                   <input type="file" accept="application/pdf" className="hidden" onChange={uploadPdf} disabled={uploading} />
                 </label>
                 {pdfPath && <button onClick={deletePdf} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"><Trash2 className="size-4" /> Supprimer</button>}
