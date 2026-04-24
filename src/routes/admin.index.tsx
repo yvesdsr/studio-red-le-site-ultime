@@ -379,8 +379,9 @@ function RealisationsModule() {
   );
 }
 
-function RealisationRow({ item, onChange }: { item: Realisation; onChange: () => void }) {
-  const [open, setOpen] = useState(false);
+function RealisationRow({ item, isOpen, onToggle, onChange }: { item: Realisation; isOpen: boolean; onToggle: () => void; onChange: () => void }) {
+  const open = isOpen;
+  const setOpen = onToggle;
   const [v, setV] = useState(item);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
