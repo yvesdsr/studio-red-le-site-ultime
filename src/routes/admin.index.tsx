@@ -471,8 +471,8 @@ function RealisationRow({ item, isOpen, onToggle, onChange }: { item: Realisatio
   }
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      <button onClick={() => setOpen((o) => !o)} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-background/40">
+    <div id={`realisation-${item.id}`} className="bg-card border border-border rounded-2xl overflow-hidden scroll-mt-24">
+      <button onClick={setOpen} className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-background/40">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-xs font-mono text-muted-foreground w-6">{String(item.display_order).padStart(2, "0")}</span>
           <div className="min-w-0">
