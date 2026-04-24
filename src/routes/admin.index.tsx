@@ -316,16 +316,36 @@ const REALISATION_CATEGORIES = [
 function RealisationsModule() {
   const [items, setItems] = useState<Realisation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const refresh = useCallback(async () => { setItems(await fetchAllRealisationsAdmin()); setLoading(false); }, []);
   useEffect(() => { refresh(); }, [refresh]);
 
   async function add() {
-    const slug = `nouvelle-realisation-${Date.now()}`;
-    const { error } = await supabase.from("realisations").insert({
-      slug, title: "Nouvelle réalisation", category: REALISATION_CATEGORIES[0],
-      display_order: items.length + 1, is_published: false,
-    });
-    if (!error) refresh();
+    setCreating(true); setErrorMsg(null);
+    try {
+      const slug = `nouvelle-realisation-${Date.now()}`;
+      const { data, error } = await supabase.from("realisations").insert({
+        slug, title: "Nouvelle réalisation", category: REALISATION_CATEGORIES[0],
+        display_order: items.length + 1, is_published: false,
+      }).select("id").single();
+      if (error) throw error;
+      await refresh();
+      if (data?.id) {
+        setOpenId(data.id);
+        // scroll to the newly opened item after render
+        setTimeout(() => {
+          document.getElementById(`realisation-${data.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      }
+    } catch (err) {
+      const m = err instanceof Error ? err.message : String(err);
+      console.error("[realisation create]", err);
+      setErrorMsg("❌ Impossible de créer la réalisation : " + m);
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
