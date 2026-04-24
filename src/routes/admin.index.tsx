@@ -355,12 +355,25 @@ function RealisationsModule() {
           <h2 className="display-md">Réalisations</h2>
           <p className="text-muted-foreground">Ajoutez et gérez les projets affichés dans le portfolio.</p>
         </div>
-        <button onClick={add} className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Plus className="size-4" /> Nouvelle réalisation
+        <button onClick={add} disabled={creating} className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60">
+          {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />} Nouvelle réalisation
         </button>
       </div>
-      {loading ? <Loader2 className="size-4 animate-spin" /> : (
-        <div className="space-y-4">{items.map((r) => <RealisationRow key={r.id} item={r} onChange={refresh} />)}</div>
+      {errorMsg && <p className="mb-4 text-sm text-destructive">{errorMsg}</p>}
+      {loading ? <Loader2 className="size-4 animate-spin" /> : items.length === 0 ? (
+        <div className="bg-card border border-border rounded-2xl p-8 text-center text-muted-foreground text-sm">
+          Aucune réalisation pour le moment. Cliquez sur « Nouvelle réalisation » pour commencer.
+        </div>
+      ) : (
+        <div className="space-y-4">{items.map((r) => (
+          <RealisationRow
+            key={r.id}
+            item={r}
+            isOpen={openId === r.id}
+            onToggle={() => setOpenId((id) => (id === r.id ? null : r.id))}
+            onChange={refresh}
+          />
+        ))}</div>
       )}
     </div>
   );
