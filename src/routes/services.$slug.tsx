@@ -43,12 +43,49 @@ const AUDIENCE_BY_SLUG: Record<string, string> = {
 };
 
 function ServiceDetailPage() {
-  const { service } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const [service, setService] = useState<Service | null>(null);
+  const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    setPdfUrl(getPdfPublicUrl(service.pdf_path));
-  }, [service.pdf_path]);
+    let cancelled = false;
+    setLoading(true);
+    fetchServiceBySlug(slug)
+      .then((s) => {
+        if (cancelled) return;
+        setService(s);
+        setPdfUrl(s ? getPdfPublicUrl(s.pdf_path) : null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <PublicLayout>
+        <div className="container-rs py-32 text-center text-muted-foreground">Chargement…</div>
+      </PublicLayout>
+    );
+  }
+
+  if (!service || !service.is_published) {
+    return (
+      <PublicLayout>
+        <div className="container-rs py-32 text-center">
+          <h1 className="display-lg">Service introuvable</h1>
+          <p className="mt-4 text-muted-foreground">Cette page n&rsquo;existe plus ou a été déplacée.</p>
+          <Link to="/services" className="inline-flex items-center gap-2 mt-8 text-primary font-medium">
+            <ArrowLeft className="size-4" /> Tous nos services
+          </Link>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   const deliverables = DELIVERABLES_BY_SLUG[service.slug] ?? ["Cadrage", "Production", "Livraison", "Suivi"];
   const audience = AUDIENCE_BY_SLUG[service.slug] ?? "Marques exigeantes qui veulent un partenaire stratégique et créatif.";
