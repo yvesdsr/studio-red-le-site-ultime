@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Download, Phone, FileText, Check } from "lucide-react";
 import { PublicLayout } from "@/components/PublicLayout";
@@ -6,36 +6,12 @@ import { Reveal } from "@/components/Reveal";
 import { fetchServiceBySlug, getPdfPublicUrl, type Service } from "@/lib/services";
 
 export const Route = createFileRoute("/services/$slug")({
-  loader: async ({ params }) => {
-    const service = await fetchServiceBySlug(params.slug);
-    if (!service || !service.is_published) throw notFound();
-    return { service };
-  },
-  head: ({ loaderData }) => {
-    const s = loaderData?.service;
-    return {
-      meta: s
-        ? [
-            { title: `${s.title} — RED STUDIO` },
-            { name: "description", content: s.short_description },
-            { property: "og:title", content: `${s.title} — RED STUDIO` },
-            { property: "og:description", content: s.short_description },
-          ]
-        : [],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: "Service — RED STUDIO" },
+    ],
+  }),
   component: ServiceDetailPage,
-  notFoundComponent: () => (
-    <PublicLayout>
-      <div className="container-rs py-32 text-center">
-        <h1 className="display-lg">Service introuvable</h1>
-        <p className="mt-4 text-muted-foreground">Cette page n&rsquo;existe plus ou a été déplacée.</p>
-        <Link to="/services" className="inline-flex items-center gap-2 mt-8 text-primary font-medium">
-          <ArrowLeft className="size-4" /> Tous nos services
-        </Link>
-      </div>
-    </PublicLayout>
-  ),
 });
 
 const DELIVERABLES_BY_SLUG: Record<string, string[]> = {
@@ -67,12 +43,49 @@ const AUDIENCE_BY_SLUG: Record<string, string> = {
 };
 
 function ServiceDetailPage() {
-  const { service } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const [service, setService] = useState<Service | null>(null);
+  const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    setPdfUrl(getPdfPublicUrl(service.pdf_path));
-  }, [service.pdf_path]);
+    let cancelled = false;
+    setLoading(true);
+    fetchServiceBySlug(slug)
+      .then((s) => {
+        if (cancelled) return;
+        setService(s);
+        setPdfUrl(s ? getPdfPublicUrl(s.pdf_path) : null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <PublicLayout>
+        <div className="container-rs py-32 text-center text-muted-foreground">Chargement…</div>
+      </PublicLayout>
+    );
+  }
+
+  if (!service || !service.is_published) {
+    return (
+      <PublicLayout>
+        <div className="container-rs py-32 text-center">
+          <h1 className="display-lg">Service introuvable</h1>
+          <p className="mt-4 text-muted-foreground">Cette page n&rsquo;existe plus ou a été déplacée.</p>
+          <Link to="/services" className="inline-flex items-center gap-2 mt-8 text-primary font-medium">
+            <ArrowLeft className="size-4" /> Tous nos services
+          </Link>
+        </div>
+      </PublicLayout>
+    );
+  }
 
   const deliverables = DELIVERABLES_BY_SLUG[service.slug] ?? ["Cadrage", "Production", "Livraison", "Suivi"];
   const audience = AUDIENCE_BY_SLUG[service.slug] ?? "Marques exigeantes qui veulent un partenaire stratégique et créatif.";
