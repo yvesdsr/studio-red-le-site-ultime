@@ -5,7 +5,7 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Reveal } from "@/components/Reveal";
 import { fetchPublishedServices, type Service } from "@/lib/services";
 
-export const Route = createFileRoute("/services")({
+export const Route = createFileRoute("/services/")({
   head: () => ({
     meta: [
       { title: "Services — RED STUDIO" },
