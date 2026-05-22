@@ -44,68 +44,76 @@ function HomePage() {
   return (
     <PublicLayout>
       {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="container-rs pt-12 md:pt-20 pb-16 md:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-            <div className="lg:col-span-7 space-y-8">
-              <Reveal>
-                <span className="red-pill"><span className="size-1.5 rounded-full bg-primary" /> Studio créatif · Abidjan</span>
-              </Reveal>
-              <Reveal delay={80}>
-                <h1 className="display-xl text-balance">
-                  Donnons une <span className="text-primary">image forte</span> à votre marque.
-                </h1>
-              </Reveal>
-              <Reveal delay={160}>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-xl text-pretty">
-                  RED STUDIO conçoit l&rsquo;identité, les supports et la présence digitale des marques
-                  qui refusent l&rsquo;ordinaire. Stratégie, design, contenus, web — au même endroit.
-                </p>
-              </Reveal>
-              <Reveal delay={240} className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  to="/services"
-                  className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-3.5 text-sm font-medium hover:bg-primary/90 ring-red transition-all hover:translate-y-[-1px]"
-                >
-                  Découvrir nos services <ArrowRight className="size-4" />
-                </Link>
-                <Link
-                  to="/realisations"
-                  className="inline-flex items-center gap-2 rounded-full border border-foreground/20 text-foreground px-6 py-3.5 text-sm font-medium hover:bg-foreground hover:text-background transition-colors"
-                >
-                  Voir nos réalisations
-                </Link>
-                <Link
-                  to="/contact"
-                  className="inline-flex items-center gap-2 rounded-full text-foreground/70 px-4 py-3.5 text-sm font-medium hover:text-primary transition-colors"
-                >
-                  Demander un devis <ArrowUpRight className="size-4" />
-                </Link>
-              </Reveal>
+      <section className="container-rs pt-6 md:pt-10">
+        <Reveal>
+          <div className="hero-card grain p-6 sm:p-10 md:p-14 lg:p-16">
+            <div className="hero-glow" />
+            <div className="relative z-10 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              <div className="lg:col-span-7 space-y-7">
+                <Reveal>
+                  <span className="red-pill bg-white/10 text-white backdrop-blur-sm border border-white/15">
+                    <span className="size-1.5 rounded-full bg-primary" /> Studio créatif · Abidjan
+                  </span>
+                </Reveal>
+                <Reveal delay={80}>
+                  <h1 className="display-xl text-balance text-white">
+                    Donnons une <span className="text-primary">image forte</span> à votre marque.
+                  </h1>
+                </Reveal>
+                <Reveal delay={160}>
+                  <p className="text-lg md:text-xl text-white/75 max-w-xl text-pretty">
+                    RED STUDIO conçoit l&rsquo;identité, les supports et la présence digitale des marques
+                    qui refusent l&rsquo;ordinaire. Stratégie, design, contenus, web — au même endroit.
+                  </p>
+                </Reveal>
+                <Reveal delay={240} className="flex flex-wrap gap-3 pt-2">
+                  <Link
+                    to="/services"
+                    className="btn-glow inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-3.5 text-sm font-medium hover:bg-primary/90"
+                  >
+                    Découvrir nos services <ArrowRight className="size-4" />
+                  </Link>
+                  <Link
+                    to="/realisations"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/25 text-white px-6 py-3.5 text-sm font-medium hover:bg-white hover:text-foreground transition-colors"
+                  >
+                    Voir nos réalisations
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="inline-flex items-center gap-2 rounded-full text-white/70 px-4 py-3.5 text-sm font-medium hover:text-primary transition-colors"
+                  >
+                    Demander un devis <ArrowUpRight className="size-4" />
+                  </Link>
+                </Reveal>
 
-              <Reveal delay={320} className="flex items-center gap-8 pt-8 text-sm text-muted-foreground">
-                <div><div className="display-md text-foreground">11</div><div>Expertises intégrées</div></div>
-                <div className="h-10 w-px bg-border" />
-                <div><div className="display-md text-foreground">100%</div><div>Sur-mesure</div></div>
-                <div className="h-10 w-px bg-border hidden sm:block" />
-                <div className="hidden sm:block"><div className="display-md text-foreground">Abidjan</div><div>& au-delà</div></div>
+                <Reveal delay={320} className="flex items-center gap-8 pt-6 text-sm text-white/60">
+                  <div><div className="display-md text-white">11</div><div>Expertises intégrées</div></div>
+                  <div className="h-10 w-px bg-white/15" />
+                  <div><div className="display-md text-white">100%</div><div>Sur-mesure</div></div>
+                  <div className="h-10 w-px bg-white/15 hidden sm:block" />
+                  <div className="hidden sm:block"><div className="display-md text-white">Abidjan</div><div>& au-delà</div></div>
+                </Reveal>
+              </div>
+
+              <Reveal delay={200} className="lg:col-span-5 relative">
+                <div className="relative aspect-[4/5] float-soft">
+                  <img
+                    src={hero}
+                    alt="Créatif portant un casque futuriste — RED STUDIO"
+                    className="size-full object-cover object-center rounded-2xl"
+                    width={1080}
+                    height={1350}
+                  />
+                  <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none" />
+                </div>
               </Reveal>
             </div>
-
-            <Reveal delay={200} className="lg:col-span-5 relative">
-              <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-card shadow-elev">
-                <img src={hero} alt="Composition graphique RED STUDIO" className="size-full object-cover" width={1600} height={1200} />
-              </div>
-              <div className="absolute -bottom-6 -left-6 hidden md:block bg-background border border-border rounded-xl p-4 shadow-elev max-w-[220px]">
-                <div className="eyebrow text-muted-foreground mb-1">Notre signature</div>
-                <p className="text-sm text-foreground">Le rouge, comme une intention. Le noir, comme une discipline.</p>
-              </div>
-            </Reveal>
           </div>
-        </div>
+        </Reveal>
 
         {/* Marquee */}
-        <div className="border-y border-border bg-card overflow-hidden">
+        <div className="mt-12 border-y border-border bg-card overflow-hidden rounded-2xl">
           <div className="flex marquee whitespace-nowrap py-5 gap-12 text-sm uppercase tracking-[0.2em] text-foreground/60">
             {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="flex gap-12 shrink-0">
@@ -120,6 +128,7 @@ function HomePage() {
           </div>
         </div>
       </section>
+
 
       {/* PRESENTATION */}
       <section className="container-rs py-20 md:py-32">
