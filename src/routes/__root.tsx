@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import logoPng from "../assets/red-studio-logo.png?url";
 
 function NotFoundComponent() {
   return (
