@@ -42,8 +42,9 @@ export const Route = createRootRoute({
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/72a820cd-81c1-40e1-9d03-f15aa8f1aac3" },
     ],
     links: [
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "shortcut icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
-      { rel: "shortcut icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", href: "/favicon.png" },
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
