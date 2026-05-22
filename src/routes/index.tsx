@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, Sparkles, Award, Users, Zap, Quote } from "lu
 import { PublicLayout } from "@/components/PublicLayout";
 import { Reveal } from "@/components/Reveal";
 import { fetchPublishedServices, type Service } from "@/lib/services";
-import hero from "@/assets/hero-composition.jpg";
+import hero from "@/assets/hero-vr-person.jpg";
 import workIdentity from "@/assets/work-identity.jpg";
 import workWeb from "@/assets/work-web.jpg";
 import workBrochure from "@/assets/work-brochure.jpg";
